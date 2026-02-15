@@ -1,0 +1,164 @@
+Metadata-Version: 2.4
+Name: gmlp_project
+Version: 0.0.0
+Summary: gMLP/MLP experiment package
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+
+# gmlp_project（ガイド）
+
+このフォルダは、gMLP/MLP の実験を動かすための「本体」です。
+学習や評価のスクリプト、ジョブ投入用のスクリプト、データ置き場などが入っています。
+
+---
+
+## 1. まず最初に（全体像）
+
+- **実験を動かす** → `scripts/` の Python を実行
+- **計算機にジョブを投げる** → `jobs/` のシェルスクリプトを `qsub` で実行
+- **データを置く場所** → `data/`
+- **ログや出力** → いまは `archive/` に退避（必要なら新規出力先を作る）
+
+---
+
+## 2. ディレクトリ構成
+
+```
+gmlp_project/
+  scripts/      # 実行用スクリプト（ここを動かす）
+  jobs/         # qsub用ジョブスクリプト
+  analysis_scripts/ # 解析・可視化スクリプト
+  src/          # 共通モジュール（段階的に移行中）
+  data/         # データセット置き場（Gitには入れない）
+  experiments/  # 実験ごとのまとめ（例: mdx2）
+  docs/         # メモや説明
+```
+
+> 互換性のために、以前の場所（`logs/`, `gmlp_logs/`, `mdx2/`）へのシンボリックリンクも残しています。
+
+---
+
+
+
+## 3. 役割の分担（重要）
+
+- **コード本体**: `gmlp_project/src/`
+- **ジョブスクリプト**: `gmlp_project/jobs/`
+
+## 4. コード一覧（何をするか）
+
+### 主要スクリプト（src/gmlp_project/）
+- `gmlp_diff_model.py` : gMLPの**diff初期化モデル**。スピン記録・メトリクス保存・モデル保存まで一通り行う。
+- `gmlp_same_model.py` : gMLPの**same初期化モデル**。diffと同様に一連の保存まで行う。
+- `gmlp_mlm_diff_model.py` : gMLPのMLM版（diff初期化）。
+- `gmlp_denoise_diff_model.py` / `gmlp_denoise_same_model.py` : デノイズ課題用のgMLP。
+- `mlp_diff_model.py` / `mlp_same_model.py` : MLP版のdiff/sameモデル。
+- `mlp_denoise_diff_model.py` / `mlp_denoise_same_model.py` : MLPのデノイズ課題。
+- `recompute_spins_from_checkpoints.py` : 保存済みモデルからスピンを再計算。
+- `build_denoise_datasets.py` : デノイズ用データセットを作成。
+- `mlm_dataset.py` : MLM用データセット処理。
+- `split_mnist_by_label.py` : MNISTをラベル別に分割。
+- `show_denoise_samples.py` / `show_mnist_npz.py` : データの可視化・確認用。
+
+> `scripts/` 配下には互換用の薄いラッパーが置いてあり、実体は `src/` に移行済みです。
+
+## 5. よく使う操作
+
+### (A) ローカルで実行する
+
+```bash
+python scripts/gmlp_diff_model.py
+```
+
+### (B) ジョブを投げる（例）
+
+```bash
+qsub jobs/<job_file>.sh
+```
+
+---
+
+## 6. パッケージとして使う（開発用）
+
+`src/` 以下を Python パッケージとして使えるようにしてあります。
+最初に1回だけ以下を実行してください。
+
+```bash
+pip install -e . --user
+```
+
+これを行うと、以下のように `gmlp_project.*` を import できます。
+
+```python
+from gmlp_project.gmlp_diff_model import main
+```
+
+---
+
+## 7. データについて
+
+- データは `data/` に置きます。
+- **大きいデータは Git に入れません。**
+- データの入手方法は `docs/` にメモするのがおすすめです。
+
+---
+
+## 8. 出力について
+
+- 以前の出力は `archive/` に退避済みです。
+- 新しい出力先を作る場合は、ジョブスクリプト内の `OUTDIR` を指定してください。
+
+---
+
+
+## 8.1 詳細な実験セットアップ（legacy README要約）
+
+### 全体像
+- gMLP (gated MLP) を用いた複製学習実験を MNIST / Fashion-MNIST で行い、Replica A/B の「スピン」（各層の特徴）を保存して幾何量を解析します。
+- 学習やデータ加工は `gmlp_project/src/`、解析は `analysis_scripts/` を使います。
+- PBS ジョブは `torch-env`（Python 3.11, PyTorch 2.x 系）と `BaseGPU/2025`, `BasePy/2025`, `python3/3.11` を前提としています。
+
+### 実験グループ
+1) **ベースライン分類 (Diff Model)**
+- ジョブ: `jobs/gmlp/run_gmlp_diff_model.sh`
+- 目的: 2 個の Replica (seed A/B) を同一データ/シャッフルで学習し、初期化差による表現の分岐を計測。
+- 主な変数: `EPOCHS`, `PATCH`, `DMODEL`, `DFFN`, `BATCH`, `LR`, `INPUT`, `OUTDIR`, `EXTRA_ARGS`。
+
+2) **ノイズ除去タスク (Diff / Same Model)**
+- ジョブ:
+  - Diff: `jobs/denoise/run_gmlp_denoise_diff_model_lamda*.sh`
+  - Same: `jobs/denoise/run_gmlp_denoise_same_model_lamda*.sh`
+- 目的:
+  - Diff: 初期化のみ変えてノイズ除去を学習。
+  - Same: 初期化を共有し、訓練シャッフルのみ変えて成長差を観察。
+- 主な変数: `EPOCHS`, `PATCH`, `DMODEL`, `DFFN`, `BATCH`, `LR`, `INPUT`, `OUTDIR`, `INIT_SEEDA/B` or `INIT_SEED`, `TRAIN_SEED*`, `EXTRA_ARGS`。
+- 関連ユーティリティ:
+  - データ生成: `jobs/denoise/run_build_denoise_datasets.sh`
+  - サンプル確認: `jobs/denoise/run_show_denoise_samples.sh`
+
+3) **スピン再計算と解析**
+- 再計算: `gmlp_project/analysis_scripts/recompute_spins_job.sh`
+  - 既存の checkpoint からスピンを再生成。
+- q_inv 図:
+  - シングルセット: `gmlp_project/analysis_scripts/q_fig.sh`
+  - 2 セット比較: `gmlp_project/analysis_scripts/q_fig_two_sets.sh`
+- レイヤ別重なり:
+  - `gmlp_project/analysis_scripts/overlap_metrics_layer_profile_job.sh`
+
+### 典型的な実験フロー
+1. データ準備: `run_build_denoise_datasets.sh` でデータ作成（必要なら可視化）。
+2. 学習: `run_gmlp_diff_model.sh` またはデノイズ系ジョブを `qsub`。
+3. スピン再構成: `recompute_spins_job.sh` を使って再計算。
+4. 解析: `q_fig*.sh` と `overlap_metrics_layer_profile_job.sh`。
+
+### PBS 実行メモ
+- `module purge` 後に `BaseGPU/2025`, `BasePy/2025`, `python3/3.11` をロード。
+- `source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate` で仮想環境を有効化。
+- GPU なしの補助ジョブは `DBG` キュー、学習は `SQUID` / `SQUID-H` が多い。
+
+## 9. 困ったとき
+
+- まず `scripts/` の中身を見て「何をしているか」を確認してください。
+- どのデータを使っているか、どこに出力しているかはスクリプトの冒頭で指定されていることが多いです。
+- わからなければ `docs/` にメモを残して、先輩に相談してください。
+
