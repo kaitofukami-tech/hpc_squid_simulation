@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q SQUID
 #PBS --group=cm9029
@@ -22,9 +36,9 @@ module purge
 module load BaseGPU/2025
 module load BasePy/2025
 module load python3/3.11
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
-REPO_ROOT="/sqfs/work/cm9029/${USER_ID}"
+REPO_ROOT="${MONO_ROOT}"
 SCRATCH_BASE="/sqfs/ssd/cm9029/${USER_ID}"
 SCRATCH_JOB_DIR="${SCRATCH_BASE}/overlap_layer_${PBS_JOBID:-manual_$$}"
 mkdir -p "$SCRATCH_JOB_DIR"
@@ -36,7 +50,7 @@ cd "$SCRATCH_JOB_DIR"
 echo "📁 Scratch dir: $(pwd)"
 
 # Pointing to the outputs of the recompute job
-RECOMPUTE_BASE="/sqfs/work/cm9029/${USER_ID}/gmlp_output/recompute/L200_Diff"
+RECOMPUTE_BASE="${MONO_ROOT}/gmlp_output/recompute/L200_Diff"
 
 SPIN_A1="${SPIN_A1:-$RECOMPUTE_BASE/on_L200/spin_A.pkl}"
 SPIN_B1="${SPIN_B1:-$RECOMPUTE_BASE/on_L200/spin_B.pkl}"

@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q SQUID-H
 #PBS --group=cm9029
@@ -24,9 +38,9 @@ module purge
 module load BaseGPU/2025
 module load BasePy/2025
 module load python3/3.11
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
-REPO_ROOT="/sqfs/work/cm9029/${USER_ID}"
+REPO_ROOT="${MONO_ROOT}"
 SCRATCH_BASE="/sqfs/ssd/cm9029/${USER_ID}"
 SCRATCH_JOB_DIR="${SCRATCH_BASE}/overlap_layer_${PBS_JOBID:-manual_$$}"
 mkdir -p "$SCRATCH_JOB_DIR"
@@ -37,10 +51,10 @@ trap cleanup EXIT
 cd "$SCRATCH_JOB_DIR"
 echo "📁 Scratch dir: $(pwd)"
 
-SPIN_A1="${SPIN_A1:-/sqfs/work/cm9029/${USER_ID}/gmlp_output/mlm_100sent/manifold100/recompute_run_20260122-215517_same_seq128_val_1sent/first_sent_val_spinA.pkl}"
-SPIN_B1="${SPIN_B1:-/sqfs/work/cm9029/${USER_ID}/gmlp_output/mlm_100sent/manifold100/recompute_run_20260122-215517_same_seq128_val_1sent/first_sent_val_spinB.pkl}"
-SPIN_A2="${SPIN_A2:-/sqfs/work/cm9029/${USER_ID}/gmlp_output/mlm_100sent/manifold100/recompute_run_20260122-215517_same_seq128_val_100sent/100_sent_val_spinA.pkl}"
-SPIN_B2="${SPIN_B2:-/sqfs/work/cm9029/${USER_ID}/gmlp_output/mlm_100sent/manifold100/recompute_run_20260122-215517_same_seq128_val_100sent/100_sent_val_spinB.pkl}"
+SPIN_A1="${SPIN_A1:-${MONO_ROOT}/gmlp_output/mlm_100sent/manifold100/recompute_run_20260122-215517_same_seq128_val_1sent/first_sent_val_spinA.pkl}"
+SPIN_B1="${SPIN_B1:-${MONO_ROOT}/gmlp_output/mlm_100sent/manifold100/recompute_run_20260122-215517_same_seq128_val_1sent/first_sent_val_spinB.pkl}"
+SPIN_A2="${SPIN_A2:-${MONO_ROOT}/gmlp_output/mlm_100sent/manifold100/recompute_run_20260122-215517_same_seq128_val_100sent/100_sent_val_spinA.pkl}"
+SPIN_B2="${SPIN_B2:-${MONO_ROOT}/gmlp_output/mlm_100sent/manifold100/recompute_run_20260122-215517_same_seq128_val_100sent/100_sent_val_spinB.pkl}"
 EPOCHS="${EPOCHS:-1 94 484 727 1000}"
 DEFAULT_OUTPUT="$REPO_ROOT/batchnorm/gmlp_mlm_qinv_out/manifold100/same_val_overlap_layer_profile1_100.png"
 OUTPUT="${OUTPUT:-$DEFAULT_OUTPUT}"

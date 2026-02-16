@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q SQUID-H
 #PBS --group=cm9029
@@ -23,9 +37,9 @@ module purge
 module load BaseGPU/2025
 module load BasePy/2025
 module load python3/3.11
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
-REPO_ROOT="/sqfs/work/cm9029/${USER_ID}"
+REPO_ROOT="${MONO_ROOT}"
 SCRATCH_BASE="/sqfs/ssd/cm9029/${USER_ID}"
 SCRATCH_JOB_DIR="${SCRATCH_BASE}/qfig_two_sets_${JOB_ID}_$$"
 mkdir -p "$SCRATCH_JOB_DIR"
@@ -50,13 +64,13 @@ else
 fi
 
 CMD=(python "${REPO_ROOT}/analysis_scripts/qinv_calc_fig_two_sets.py" \
-  --spin_file_a1 /sqfs/work/cm9029/${USER_ID}/gmlp_output/denoise_diff_model/lambda150/run_gmlp_denoise_diff_20260101-012633_p4_train/gmlp_spinA_train_D256_F1536_L10_M1000_seedA123.pkl\
-  --spin_file_b1 /sqfs/work/cm9029/${USER_ID}/gmlp_output/denoise_diff_model/lambda150/run_gmlp_denoise_diff_20260101-012633_p4_train/gmlp_spinB_train_D256_F1536_L10_M1000_seedB456.pkl\
+  --spin_file_a1 ${MONO_ROOT}/gmlp_output/denoise_diff_model/lambda150/run_gmlp_denoise_diff_20260101-012633_p4_train/gmlp_spinA_train_D256_F1536_L10_M1000_seedA123.pkl\
+  --spin_file_b1 ${MONO_ROOT}/gmlp_output/denoise_diff_model/lambda150/run_gmlp_denoise_diff_20260101-012633_p4_train/gmlp_spinB_train_D256_F1536_L10_M1000_seedB456.pkl\
   ${METRICS_A1:+--metrics_a1 "$METRICS_A1"} \
   ${METRICS_B1:+--metrics_b1 "$METRICS_B1"} \
   --label1       GMLP_p4_MNIST_DIFF_train \
-  --spin_file_a2  /sqfs/work/cm9029/${USER_ID}/gmlp_output/denoise_same_model/lambda150/run_gmlp_denoise_same_20260101-135041_p4_train/gmlp_same_spinA_train_D256_F1536_L10_M1000_seed123_trA2025.pkl\
-  --spin_file_b2  /sqfs/work/cm9029/${USER_ID}/gmlp_output/denoise_same_model/lambda150/run_gmlp_denoise_same_20260101-135041_p4_train/gmlp_same_spinB_train_D256_F1536_L10_M1000_seed123_trB4242.pkl\
+  --spin_file_a2  ${MONO_ROOT}/gmlp_output/denoise_same_model/lambda150/run_gmlp_denoise_same_20260101-135041_p4_train/gmlp_same_spinA_train_D256_F1536_L10_M1000_seed123_trA2025.pkl\
+  --spin_file_b2  ${MONO_ROOT}/gmlp_output/denoise_same_model/lambda150/run_gmlp_denoise_same_20260101-135041_p4_train/gmlp_same_spinB_train_D256_F1536_L10_M1000_seed123_trB4242.pkl\
   ${METRICS_A2:+--metrics_a2 "$METRICS_A2"} \
   ${METRICS_B2:+--metrics_b2 "$METRICS_B2"} \
   --label2       GMLP_p4_MNIST_SAME_train \

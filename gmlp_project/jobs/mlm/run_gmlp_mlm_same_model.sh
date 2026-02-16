@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q SQUID-H
 #PBS --group=cm9029
@@ -30,7 +44,7 @@ else
 fi
 
 # === 仮想環境をアクティベート ===
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
 which python
 python --version
@@ -42,7 +56,7 @@ echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
 # === プロジェクトディレクトリへ移動 ===
-PROJECT_ROOT="/sqfs/work/cm9029/${USER_ID}/gmlp_project"
+PROJECT_ROOT="${MONO_ROOT}/gmlp_project"
 if [ ! -d "$PROJECT_ROOT" ]; then
     echo "❌ Project root ${PROJECT_ROOT} が見つかりません"
     exit 1
@@ -69,7 +83,7 @@ DATASET_CONFIG="${DATASET_CONFIG:-wikitext-2-raw-v1}"
 TOKENIZER_NAME="${TOKENIZER_NAME:-bert-base-uncased}"
 CACHE_DIR="${CACHE_DIR:-}"
 
-OUTDIR="${OUTDIR:-/sqfs/work/cm9029/${USER_ID}/gmlp_mlm_output/same}"
+OUTDIR="${OUTDIR:-${MONO_ROOT}/gmlp_mlm_output/same}"
 
 # seeds (same: 初期化をコピー、ミニバッチ/マスク乱数のみ別)
 INIT_SEED="${INIT_SEED:-123}"

@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q DBG
 #PBS --group=cm9029
@@ -20,7 +34,7 @@ module purge
 module load BaseGPU/2025
 module load BasePy/2025
 module load python3/3.11
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 python3 -m pip install -q joblib
 
 
@@ -30,7 +44,7 @@ LAYER_INDEX="${LAYER_INDEX:-0}"     # 0..4 for MLP layers (out_bn excluded)
 OUTDIR="${OUTDIR:-./thesis/mlp_qinv_out/denoise_val_L500}" 
 TITLE="${TITLE:-q_inv comparison (MLP Validation)}"
 
-cd /sqfs/work/cm9029/${USER_ID}
+cd ${MONO_ROOT}
 
 # Build layer args
 if [ -n "$ALL_LAYERS" ] && [ "$ALL_LAYERS" != "0" ]; then
@@ -40,13 +54,13 @@ else
 fi
 
 python analysis_scripts/mlp_qinv_calc_fig_two_sets.py \
-  --spin_file_a1 /sqfs/work/cm9029/${USER_ID}/mlp_output/denoise/diff/job_L500_0:885987.sqd/run_mnist_lambda500_val_20251218-010238/mlp_denoise_spinA_mnist_lambda500_val_seedA123.pkl\
-  --spin_file_b1 /sqfs/work/cm9029/${USER_ID}/mlp_output/denoise/diff/job_L500_0:885987.sqd/run_mnist_lambda500_val_20251218-010238/mlp_denoise_spinB_mnist_lambda500_val_seedB456.pkl\
+  --spin_file_a1 ${MONO_ROOT}/mlp_output/denoise/diff/job_L500_0:885987.sqd/run_mnist_lambda500_val_20251218-010238/mlp_denoise_spinA_mnist_lambda500_val_seedA123.pkl\
+  --spin_file_b1 ${MONO_ROOT}/mlp_output/denoise/diff/job_L500_0:885987.sqd/run_mnist_lambda500_val_20251218-010238/mlp_denoise_spinB_mnist_lambda500_val_seedB456.pkl\
   ${METRICS_A1:+--metrics_a1 "$METRICS_A1"} \
   ${METRICS_B1:+--metrics_b1 "$METRICS_B1"} \
   --label1       MLP_MNIST_DIFF_VAL \
-  --spin_file_a2 /sqfs/work/cm9029/${USER_ID}/mlp_output/denoise/same/job_L500_0:885985.sqd/run_same_mnist_lambda500_val_20251217-232945/mlp_same_model_spinA_mnist_lambda500_val_seed123_trA2025.pkl\
-  --spin_file_b2 /sqfs/work/cm9029/${USER_ID}/mlp_output/denoise/same/job_L500_0:885985.sqd/run_same_mnist_lambda500_val_20251217-232945/mlp_same_model_spinB_mnist_lambda500_val_seed123_trB4242.pkl\
+  --spin_file_a2 ${MONO_ROOT}/mlp_output/denoise/same/job_L500_0:885985.sqd/run_same_mnist_lambda500_val_20251217-232945/mlp_same_model_spinA_mnist_lambda500_val_seed123_trA2025.pkl\
+  --spin_file_b2 ${MONO_ROOT}/mlp_output/denoise/same/job_L500_0:885985.sqd/run_same_mnist_lambda500_val_20251217-232945/mlp_same_model_spinB_mnist_lambda500_val_seed123_trB4242.pkl\
   ${METRICS_A2:+--metrics_a2 "$METRICS_A2"} \
   ${METRICS_B2:+--metrics_b2 "$METRICS_B2"} \
   --label2       MLP_MNIST_SAME_VAL \

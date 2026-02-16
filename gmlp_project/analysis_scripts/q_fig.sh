@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q DBG
 #PBS --group=cm9029
@@ -29,7 +43,7 @@ module load python3/3.11
 module load cudnn
 
 # === 仮想環境をアクティベート ===
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
 echo "🔍 Python version:"
 which python
@@ -42,7 +56,7 @@ echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
 # === プロジェクトディレクトリへ移動 ===
-cd /sqfs/work/cm9029/${USER_ID}
+cd ${MONO_ROOT}
 echo "📁 Current directory: $(pwd)"
 
 
@@ -56,8 +70,8 @@ echo "Running script: q_inv_calc_mul.py"
 
 # === 実行 ===
 python analysis_scripts/qinv_calc_fig_lossacc.py\
-    --spin_file_a  /sqfs/work/cm9029/${USER_ID}/output/recomputed_spins/random/gmlp_diff_model_p4_mnist_input_fashion/gmlp_spinA_train_D256_F1536_L10_M1000_seedA123_recomputed_A.pkl\
-    --spin_file_b  /sqfs/work/cm9029/${USER_ID}/output/recomputed_spins/random/gmlp_diff_model_p4_mnist_input_fashion/gmlp_spinB_train_D256_F1536_L10_M1000_seedB456_recomputed_B.pkl\
+    --spin_file_a  ${MONO_ROOT}/output/recomputed_spins/random/gmlp_diff_model_p4_mnist_input_fashion/gmlp_spinA_train_D256_F1536_L10_M1000_seedA123_recomputed_A.pkl\
+    --spin_file_b  ${MONO_ROOT}/output/recomputed_spins/random/gmlp_diff_model_p4_mnist_input_fashion/gmlp_spinB_train_D256_F1536_L10_M1000_seedB456_recomputed_B.pkl\
     --metrics-a  \
     --metrics-b  \
     --output-dir  ./thesis/randomnet\

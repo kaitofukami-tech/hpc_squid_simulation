@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q SQUID-H
 #PBS --group=cm9029
@@ -24,9 +38,9 @@ module purge
 module load BaseGPU/2025
 module load BasePy/2025
 module load python3/3.11
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
-REPO_ROOT="/sqfs/work/cm9029/${USER_ID}"
+REPO_ROOT="${MONO_ROOT}"
 SCRATCH_BASE="/sqfs/ssd/cm9029/${USER_ID}"
 SCRATCH_JOB_DIR="${SCRATCH_BASE}/mlp_overlap_layer_${PBS_JOBID:-manual_$$}"
 mkdir -p "$SCRATCH_JOB_DIR"
@@ -38,10 +52,10 @@ cd "$SCRATCH_JOB_DIR"
 echo "📁 Scratch dir: $(pwd)"
 
 # Two-set comparison (diff vs same) using global spin pickles
-SPIN_A1="${SPIN_A1:-/sqfs/work/cm9029/${USER_ID}/mlp_output/mlp_mlm/recompute_run_20260126-031304_diff_seq128_train/spin_A_Global.pkl}"
-SPIN_B1="${SPIN_B1:-/sqfs/work/cm9029/${USER_ID}/mlp_output/mlp_mlm/recompute_run_20260126-031304_diff_seq128_train/spin_B_Global.pkl}"
-SPIN_A2="${SPIN_A2:-/sqfs/work/cm9029/${USER_ID}/mlp_output/mlp_mlm/recompute_run_20260126-135707_same_seq128_train/spin_A_Global.pkl}"
-SPIN_B2="${SPIN_B2:-/sqfs/work/cm9029/${USER_ID}/mlp_output/mlp_mlm/recompute_run_20260126-135707_same_seq128_train/spin_B_Global.pkl}"
+SPIN_A1="${SPIN_A1:-${MONO_ROOT}/mlp_output/mlp_mlm/recompute_run_20260126-031304_diff_seq128_train/spin_A_Global.pkl}"
+SPIN_B1="${SPIN_B1:-${MONO_ROOT}/mlp_output/mlp_mlm/recompute_run_20260126-031304_diff_seq128_train/spin_B_Global.pkl}"
+SPIN_A2="${SPIN_A2:-${MONO_ROOT}/mlp_output/mlp_mlm/recompute_run_20260126-135707_same_seq128_train/spin_A_Global.pkl}"
+SPIN_B2="${SPIN_B2:-${MONO_ROOT}/mlp_output/mlp_mlm/recompute_run_20260126-135707_same_seq128_train/spin_B_Global.pkl}"
 EPOCHS="${EPOCHS:-1 94 484 727 1000}"
 
 DEFAULT_OUTPUT="$REPO_ROOT/thesis/mlp_qinv_out/mlp_mlm/train/overlap_layer_profile_diff_vs_same.png"

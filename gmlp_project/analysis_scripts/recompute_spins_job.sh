@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q DBG
 #PBS --group=cm9029
@@ -31,7 +45,7 @@ module load python3/3.11
 module load cudnn
 
 # === 仮想環境をアクティベート ===
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
 echo "🔍 Python version:"
 which python
@@ -43,7 +57,7 @@ nvcc --version || echo "nvcc not found"
 echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
-REPO_ROOT="/sqfs/work/cm9029/${USER_ID}"
+REPO_ROOT="${MONO_ROOT}"
 SCRATCH_BASE="/sqfs/ssd/cm9029/${USER_ID}"
 SCRATCH_JOB_DIR="${SCRATCH_BASE}/recompute_spins_${PBS_JOBID:-manual_$$}"
 mkdir -p "$SCRATCH_JOB_DIR"
@@ -58,13 +72,13 @@ echo "📁 Scratch dir: $(pwd)"
 # 🛠 設定（必要に応じて書き換えてください）
 # ------------------------------
 RUN_ID="run_gmlp_20260101-020554_p4_train"
-RUN_ROOT="/sqfs/work/cm9029/${USER_ID}/gmlp_output/diff_model/${RUN_ID}"
-CHECKPOINT_ROOT_BASE="/sqfs/work/cm9029/${USER_ID}/gmlp_output/diff_model/checkpoints/${RUN_ID}"
+RUN_ROOT="${MONO_ROOT}/gmlp_output/diff_model/${RUN_ID}"
+CHECKPOINT_ROOT_BASE="${MONO_ROOT}/gmlp_output/diff_model/checkpoints/${RUN_ID}"
 TAGS=(A B)
 
-DATASET="/sqfs/work/cm9029/${USER_ID}/gmlp_project/data/denoise/fashion_mnist_lambda500.npz"
-PROJECT_ROOT="/sqfs/work/cm9029/${USER_ID}/gmlp_project"
-OUTPUT_ROOT="/sqfs/work/cm9029/${USER_ID}/output/recomputed_spins/random"
+DATASET="${MONO_ROOT}/gmlp_project/data/denoise/fashion_mnist_lambda500.npz"
+PROJECT_ROOT="${MONO_ROOT}/gmlp_project"
+OUTPUT_ROOT="${MONO_ROOT}/output/recomputed_spins/random"
 # 任意の出力ディレクトリ名（未指定なら RUN_ID を使用）
 OUTPUT_DIR_NAME="gmlp_diff_model_p4_mnist_input_fashion"
 

@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q SQUID-H
 #PBS --group=cm9029
@@ -25,9 +39,9 @@ module purge
 module load BaseGPU/2025
 module load BasePy/2025
 module load python3/3.11
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
-REPO_ROOT="/sqfs/work/cm9029/${USER_ID}"
+REPO_ROOT="${MONO_ROOT}"
 SCRATCH_BASE="/sqfs/ssd/cm9029/${USER_ID}"
 SCRATCH_JOB_DIR="${SCRATCH_BASE}/qinv_autocorr_${JOB_ID}_$$"
 mkdir -p "$SCRATCH_JOB_DIR"
@@ -39,7 +53,7 @@ cd "$SCRATCH_JOB_DIR"
 echo "📁 Scratch dir: $(pwd)"
 
 # Required (default provided; override via environment)
-SPIN_FILE="${SPIN_FILE:-/sqfs/work/cm9029/${USER_ID}/gmlp_output/non_mani/diff_train/spin_A_Global.pkl}"
+SPIN_FILE="${SPIN_FILE:-${MONO_ROOT}/gmlp_output/non_mani/diff_train/spin_A_Global.pkl}"
 
 # Optional overrides
 ALL_LAYERS="${ALL_LAYERS:-1}"

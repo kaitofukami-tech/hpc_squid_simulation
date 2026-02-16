@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q DBG
 #PBS --group=cm9029
@@ -23,9 +37,9 @@ module purge
 module load BasePy/2025
 module load python3/3.11
 
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
-REPO_ROOT="/sqfs/work/cm9029/${USER_ID}/gmlp_project"
+REPO_ROOT="${MONO_ROOT}/gmlp_project"
 SCRATCH_BASE="/sqfs/ssd/cm9029/${USER_ID}"
 SCRATCH_JOB_DIR="${SCRATCH_BASE}/show_denoise_${PBS_JOBID:-manual_$$}"
 mkdir -p "$SCRATCH_JOB_DIR"
@@ -36,12 +50,12 @@ trap cleanup EXIT
 cd "$SCRATCH_JOB_DIR"
 echo "📁 Scratch dir: $(pwd)"
 
-INPUT="${INPUT:-/sqfs/work/cm9029/${USER_ID}/gmlp_project/data/denoise/mnist_lambda150.npz}"
+INPUT="${INPUT:-${MONO_ROOT}/gmlp_project/data/denoise/mnist_lambda150.npz}"
 SPLIT="${SPLIT:-test}"
 SAMPLES="${SAMPLES:-8}"
 INDICES="${INDICES:-}"
 AS_JSON="${AS_JSON:-0}"
-OUTPUT_DIR="${OUTPUT_DIR:-/sqfs/work/cm9029/${USER_ID}/output/denoise_samples}"
+OUTPUT_DIR="${OUTPUT_DIR:-${MONO_ROOT}/output/denoise_samples}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
 CMD=(python "$REPO_ROOT/scripts/show_denoise_samples.py" --input "$INPUT" --split "$SPLIT" --output-dir "$OUTPUT_DIR")

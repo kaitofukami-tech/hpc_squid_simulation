@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q SQUID-H
 #PBS --group=cm9029
@@ -6,8 +20,8 @@
 #PBS -M fukami@cp.cmc.osaka-u.ac.jp
 #PBS -l elapstim_req=01:00:00
 #PBS -l cpunum_job=1
-#PBS -o /sqfs/work/cm9029/${USER_ID}/gmlp_logs/overlap_layer_profile_label0_label1.out
-#PBS -e /sqfs/work/cm9029/${USER_ID}/gmlp_logs/overlap_layer_profile_label0_label1.err
+#PBS -o ${MONO_ROOT}/gmlp_logs/overlap_layer_profile_label0_label1.out
+#PBS -e ${MONO_ROOT}/gmlp_logs/overlap_layer_profile_label0_label1.err
 #PBS -r n
 
 set -euo pipefail
@@ -22,9 +36,9 @@ module purge
 module load BaseGPU/2025
 module load BasePy/2025
 module load python3/3.11
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
-REPO_ROOT="/sqfs/work/cm9029/${USER_ID}"
+REPO_ROOT="${MONO_ROOT}"
 SCRATCH_BASE="/sqfs/ssd/cm9029/${USER_ID}"
 SCRATCH_JOB_DIR="${SCRATCH_BASE}/overlap_layer_${PBS_JOBID:-manual_$$}"
 mkdir -p "$SCRATCH_JOB_DIR"
@@ -36,7 +50,7 @@ cd "$SCRATCH_JOB_DIR"
 echo "📁 Scratch dir: $(pwd)"
 
 # Pointing to the outputs of the recompute job
-RECOMPUTE_BASE="/sqfs/work/cm9029/${USER_ID}/gmlp_output/recompute/Label0_Label1_Diff"
+RECOMPUTE_BASE="${MONO_ROOT}/gmlp_output/recompute/Label0_Label1_Diff"
 
 SPIN_A1="${SPIN_A1:-$RECOMPUTE_BASE/on_Label0/spin_A.pkl}"
 SPIN_B1="${SPIN_B1:-$RECOMPUTE_BASE/on_Label0/spin_B.pkl}"
@@ -45,11 +59,11 @@ SPIN_B2="${SPIN_B2:-$RECOMPUTE_BASE/on_Label1/spin_B.pkl}"
 
 # Recompute spins if missing
 PROJECT_ROOT="$REPO_ROOT/gmlp_project"
-MODEL_CHECKPOINT_DIR="${MODEL_CHECKPOINT_DIR:-/sqfs/work/cm9029/${USER_ID}/gmlp_output/diff_model/checkpoints/run_gmlp_20260101-020554_p4_train}"
+MODEL_CHECKPOINT_DIR="${MODEL_CHECKPOINT_DIR:-${MONO_ROOT}/gmlp_output/diff_model/checkpoints/run_gmlp_20260101-020554_p4_train}"
 CHECKPOINT_ROOT_A="${CHECKPOINT_ROOT_A:-$MODEL_CHECKPOINT_DIR/A}"
 CHECKPOINT_ROOT_B="${CHECKPOINT_ROOT_B:-$MODEL_CHECKPOINT_DIR/B}"
-SPIN_SRC_A="${SPIN_SRC_A:-/sqfs/work/cm9029/${USER_ID}/gmlp_output/diff_model/run_gmlp_20260101-020554_p4_train/gmlp_spinA_train_D256_F1536_L10_M1000_seedA123.pkl}"
-SPIN_SRC_B="${SPIN_SRC_B:-/sqfs/work/cm9029/${USER_ID}/gmlp_output/diff_model/run_gmlp_20260101-020554_p4_train/gmlp_spinB_train_D256_F1536_L10_M1000_seedB456.pkl}"
+SPIN_SRC_A="${SPIN_SRC_A:-${MONO_ROOT}/gmlp_output/diff_model/run_gmlp_20260101-020554_p4_train/gmlp_spinA_train_D256_F1536_L10_M1000_seedA123.pkl}"
+SPIN_SRC_B="${SPIN_SRC_B:-${MONO_ROOT}/gmlp_output/diff_model/run_gmlp_20260101-020554_p4_train/gmlp_spinB_train_D256_F1536_L10_M1000_seedB456.pkl}"
 DATA_LABEL0="${DATA_LABEL0:-$PROJECT_ROOT/data/mnist_by_label/mnist_label0.npz}"
 DATA_LABEL1="${DATA_LABEL1:-$PROJECT_ROOT/data/mnist_by_label/mnist_label1.npz}"
 MEASURE_DATA="${MEASURE_DATA:-train}"

@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q SQUID-H
 #PBS --group=cm9029
@@ -26,7 +40,7 @@ module load BasePy/2025
 module load python3/3.11
 module load cudnncd
 
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
 which python
 python --version
@@ -42,15 +56,15 @@ DMODEL="${DMODEL:-256}"
 DFFN="${DFFN:-1536}"
 BATCH="${BATCH:-256}"
 LR="${LR:-1e-3}"
-INPUT="${INPUT:-/sqfs/work/cm9029/${USER_ID}/gmlp_project/data/mnist.npz}"
-OUTDIR="${OUTDIR:-/sqfs/work/cm9029/${USER_ID}/gmlp_output/same_model}"
+INPUT="${INPUT:-${MONO_ROOT}/gmlp_project/data/mnist.npz}"
+OUTDIR="${OUTDIR:-${MONO_ROOT}/gmlp_output/same_model}"
 INIT_SEED="${INIT_SEED:-123}"
 TRAIN_SEED_A="${TRAIN_SEED_A:-2025}"
 TRAIN_SEED_B="${TRAIN_SEED_B:-4242}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
 # === 作業ディレクトリ (SSD) 設定 ===
-REPO_ROOT="/sqfs/work/cm9029/${USER_ID}/gmlp_project"
+REPO_ROOT="${MONO_ROOT}/gmlp_project"
 SCRATCH_BASE="/sqfs/ssd/cm9029/${USER_ID}"
 JOB_LABEL="gmlp_same_${PBS_JOBID:-manual_$$}"
 SCRATCH_JOB_DIR="${SCRATCH_BASE}/${JOB_LABEL}"

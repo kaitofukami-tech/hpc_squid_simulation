@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q DBG
 #PBS --group=cm9029
@@ -22,9 +36,9 @@ module purge
 module load BaseGPU/2025
 module load BasePy/2025
 module load python3/3.11
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
-REPO_ROOT="/sqfs/work/cm9029/${USER_ID}"
+REPO_ROOT="${MONO_ROOT}"
 SCRATCH_BASE="/sqfs/ssd/cm9029/${USER_ID}"
 SCRATCH_JOB_DIR="${SCRATCH_BASE}/overlap_layer_${PBS_JOBID:-manual_$$}"
 mkdir -p "$SCRATCH_JOB_DIR"
@@ -35,10 +49,10 @@ trap cleanup EXIT
 cd "$SCRATCH_JOB_DIR"
 echo "📁 Scratch dir: $(pwd)"
 
-SPIN_A1="${SPIN_A1:-/sqfs/work/cm9029/${USER_ID}/gmlp_output_diff_denoise_model/run_20251112-093642_p4/gmlp_spinA_D256_F1536_L10_M1000_seedA123.pkl}"
-SPIN_B1="${SPIN_B1:-/sqfs/work/cm9029/${USER_ID}/gmlp_output_diff_denoise_model/run_20251112-093642_p4/gmlp_spinB_D256_F1536_L10_M1000_seedB456.pkl}"
-SPIN_A2="${SPIN_A2:-/sqfs/work/cm9029/${USER_ID}/gmlp_output_same_denoise_model/run_20251112-113648_p4/gmlp_same_spinA_D256_F1536_L10_M1000_seed123_trA2025.pkl}"
-SPIN_B2="${SPIN_B2:-/sqfs/work/cm9029/${USER_ID}/gmlp_output_same_denoise_model/run_20251112-113648_p4/gmlp_same_spinB_D256_F1536_L10_M1000_seed123_trB4242.pkl}"
+SPIN_A1="${SPIN_A1:-${MONO_ROOT}/gmlp_output_diff_denoise_model/run_20251112-093642_p4/gmlp_spinA_D256_F1536_L10_M1000_seedA123.pkl}"
+SPIN_B1="${SPIN_B1:-${MONO_ROOT}/gmlp_output_diff_denoise_model/run_20251112-093642_p4/gmlp_spinB_D256_F1536_L10_M1000_seedB456.pkl}"
+SPIN_A2="${SPIN_A2:-${MONO_ROOT}/gmlp_output_same_denoise_model/run_20251112-113648_p4/gmlp_same_spinA_D256_F1536_L10_M1000_seed123_trA2025.pkl}"
+SPIN_B2="${SPIN_B2:-${MONO_ROOT}/gmlp_output_same_denoise_model/run_20251112-113648_p4/gmlp_same_spinB_D256_F1536_L10_M1000_seed123_trB4242.pkl}"
 EPOCHS="${EPOCHS:-1 484 1000}"
 DEFAULT_OUTPUT="$REPO_ROOT/gmlp_mlm_qinv_out/dualsentenceAB-trainAB/overlap_layer_profile.png"
 OUTPUT="${OUTPUT:-$DEFAULT_OUTPUT}"

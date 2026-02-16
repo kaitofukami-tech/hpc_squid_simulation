@@ -1,4 +1,18 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q DBG
 #PBS --group=cm9029
@@ -24,13 +38,13 @@ module purge
 module load BasePy/2025
 module load python3/3.11
 
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source ${MONO_ROOT}/torch-env/bin/activate
 
 echo "🔍 Python version:"
 which python
 python --version
 
-REPO_ROOT="/sqfs/work/cm9029/${USER_ID}/gmlp_project"
+REPO_ROOT="${MONO_ROOT}/gmlp_project"
 SCRATCH_BASE="/sqfs/ssd/cm9029/${USER_ID}"
 SCRATCH_JOB_DIR="${SCRATCH_BASE}/split_mnist_${PBS_JOBID:-manual_$$}"
 mkdir -p "$SCRATCH_JOB_DIR"
@@ -43,8 +57,8 @@ echo "📁 Scratch dir: $(pwd)"
 
 echo "Running script: scripts/split_mnist_by_label.py"
 
-INPUT="${INPUT:-/sqfs/work/cm9029/${USER_ID}/gmlp_project/data/mnist.npz}"
-OUTDIR="${OUTDIR:-/sqfs/work/cm9029/${USER_ID}/gmlp_project/data/mnist_by_label}"
+INPUT="${INPUT:-${MONO_ROOT}/gmlp_project/data/mnist.npz}"
+OUTDIR="${OUTDIR:-${MONO_ROOT}/gmlp_project/data/mnist_by_label}"
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
 echo "📥 Input : $INPUT"
