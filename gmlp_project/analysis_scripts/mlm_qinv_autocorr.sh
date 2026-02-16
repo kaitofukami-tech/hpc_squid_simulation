@@ -1,18 +1,4 @@
 #!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MONO_ROOT=""
-dir="$SCRIPT_DIR"
-while [ "$dir" != "/" ]; do
-  if [ -d "$dir/.git" ]; then
-    MONO_ROOT="$dir"
-    break
-  fi
-  dir="$(dirname "$dir")"
-done
-if [ -z "$MONO_ROOT" ]; then
-  MONO_ROOT="$SCRIPT_DIR"
-fi
-REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #------- qsub option -----------
 #PBS -q SQUID-H
 #PBS --group=cm9029
@@ -27,6 +13,20 @@ REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 #PBS -e ~/qinv_autocorr_log.err
 #PBS -r n
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MONO_ROOT=""
+dir="$SCRIPT_DIR"
+while [ "$dir" != "/" ]; do
+  if [ -d "$dir/.git" ]; then
+    MONO_ROOT="$dir"
+    break
+  fi
+  dir="$(dirname "$dir")"
+done
+if [ -z "$MONO_ROOT" ]; then
+  MONO_ROOT="$SCRIPT_DIR"
+fi
+REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 set -euo pipefail
 
 echo "🚀 Starting q_inv autocorr job (all pairs)"

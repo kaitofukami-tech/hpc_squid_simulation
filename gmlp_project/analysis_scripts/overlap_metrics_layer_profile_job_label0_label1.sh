@@ -1,4 +1,15 @@
 #!/bin/bash
+#------- qsub option -----------
+#PBS -q SQUID-H
+#PBS --group=cm9029
+#PBS -m eb
+#PBS -M fukami@cp.cmc.osaka-u.ac.jp
+#PBS -l elapstim_req=01:00:00
+#PBS -l cpunum_job=1
+#PBS -o ${MONO_ROOT}/gmlp_logs/overlap_layer_profile_label0_label1.out
+#PBS -e ${MONO_ROOT}/gmlp_logs/overlap_layer_profile_label0_label1.err
+#PBS -r n
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MONO_ROOT=""
 dir="$SCRIPT_DIR"
@@ -13,17 +24,6 @@ if [ -z "$MONO_ROOT" ]; then
   MONO_ROOT="$SCRIPT_DIR"
 fi
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
-#------- qsub option -----------
-#PBS -q SQUID-H
-#PBS --group=cm9029
-#PBS -m eb
-#PBS -M fukami@cp.cmc.osaka-u.ac.jp
-#PBS -l elapstim_req=01:00:00
-#PBS -l cpunum_job=1
-#PBS -o ${MONO_ROOT}/gmlp_logs/overlap_layer_profile_label0_label1.out
-#PBS -e ${MONO_ROOT}/gmlp_logs/overlap_layer_profile_label0_label1.err
-#PBS -r n
-
 set -euo pipefail
 
 echo "🚀 Starting overlap layer-profile job (Label 0 vs Label 1)"

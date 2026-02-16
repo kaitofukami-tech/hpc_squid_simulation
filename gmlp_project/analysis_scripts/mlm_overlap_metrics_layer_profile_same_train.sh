@@ -1,4 +1,17 @@
 #!/bin/bash
+#------- qsub option -----------
+#PBS -q SQUID-H
+#PBS --group=cm9029
+#PBS -m eb
+#PBS -M fukami@cp.cmc.osaka-u.ac.jp
+#PBS -l elapstim_req=04:00:00
+#PBS -l cpunum_job=16
+#PBS --enable-cloud-bursting=yes   
+#PBS -U cloud_wait_limit=01:00:00 
+#PBS -o ~/mlm_overlap_layer_profile_same_train.out
+#PBS -e ~/mlm_overlap_layer_profile_same_train.err
+#PBS -r n
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MONO_ROOT=""
 dir="$SCRIPT_DIR"
@@ -13,19 +26,6 @@ if [ -z "$MONO_ROOT" ]; then
   MONO_ROOT="$SCRIPT_DIR"
 fi
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
-#------- qsub option -----------
-#PBS -q SQUID-H
-#PBS --group=cm9029
-#PBS -m eb
-#PBS -M fukami@cp.cmc.osaka-u.ac.jp
-#PBS -l elapstim_req=04:00:00
-#PBS -l cpunum_job=16
-#PBS --enable-cloud-bursting=yes   
-#PBS -U cloud_wait_limit=01:00:00 
-#PBS -o ~/mlm_overlap_layer_profile_same_train.out
-#PBS -e ~/mlm_overlap_layer_profile_same_train.err
-#PBS -r n
-
 set -euo pipefail
 
 echo "🚀 Starting overlap layer-profile job"

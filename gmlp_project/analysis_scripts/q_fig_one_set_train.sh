@@ -1,4 +1,16 @@
 #!/bin/bash
+#------- qsub option -----------
+#PBS -q SQUID-H
+#PBS --group=cm9029
+#PBS -m eb
+#PBS -M fukami@cp.cmc.osaka-u.ac.jp
+#PBS -l elapstim_req=01:00:00
+#PBS -l cpunum_job=8
+#PBS -l gpunum_job=1
+#PBS -o ~/q2_single_analysis_log.out
+#PBS -e ~/q2_single_analysis_log.err
+#PBS -r n
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MONO_ROOT=""
 dir="$SCRIPT_DIR"
@@ -13,18 +25,6 @@ if [ -z "$MONO_ROOT" ]; then
   MONO_ROOT="$SCRIPT_DIR"
 fi
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
-#------- qsub option -----------
-#PBS -q SQUID-H
-#PBS --group=cm9029
-#PBS -m eb
-#PBS -M fukami@cp.cmc.osaka-u.ac.jp
-#PBS -l elapstim_req=01:00:00
-#PBS -l cpunum_job=8
-#PBS -l gpunum_job=1
-#PBS -o ~/q2_single_analysis_log.out
-#PBS -e ~/q2_single_analysis_log.err
-#PBS -r n
-
 set -euo pipefail
 
 echo "🚀 Starting single q_inv figure job"

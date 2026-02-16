@@ -1,4 +1,16 @@
 #!/bin/bash
+#------- qsub option -----------
+#PBS -q DBG
+#PBS --group=cm9029
+#PBS -m eb
+#PBS -M fukami@cp.cmc.osaka-u.ac.jp
+#PBS -l elapstim_req=00:10:00
+#PBS -l cpunum_job=8
+#PBS -l gpunum_job=0
+#PBS -o ~/q2_dual_analysis_log_val.out
+#PBS -e ~/q2_dual_analysis_log_val.err
+#PBS -r n
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MONO_ROOT=""
 dir="$SCRIPT_DIR"
@@ -13,18 +25,6 @@ if [ -z "$MONO_ROOT" ]; then
   MONO_ROOT="$SCRIPT_DIR"
 fi
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
-#------- qsub option -----------
-#PBS -q DBG
-#PBS --group=cm9029
-#PBS -m eb
-#PBS -M fukami@cp.cmc.osaka-u.ac.jp
-#PBS -l elapstim_req=00:10:00
-#PBS -l cpunum_job=8
-#PBS -l gpunum_job=0
-#PBS -o ~/q2_dual_analysis_log_val.out
-#PBS -e ~/q2_dual_analysis_log_val.err
-#PBS -r n
-
 echo "🚀 Starting MLP dual q_inv figure job (VALIDATION)"
 echo "Job ID: $PBS_JOBID"
 echo "Host: $(hostname)"

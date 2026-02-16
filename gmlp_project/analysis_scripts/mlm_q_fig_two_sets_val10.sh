@@ -1,4 +1,17 @@
 #!/bin/bash
+#------- qsub option -----------
+#PBS -q SQUID-H
+#PBS --group=cm9029
+#PBS -m eb
+#PBS -M fukami@cp.cmc.osaka-u.ac.jp
+#PBS -l elapstim_req=05:00:00
+#PBS -l cpunum_job=8
+#PBS --enable-cloud-bursting=yes   #クラウドバースティングすることを許可します。
+#PBS -U cloud_wait_limit=01:00:00   #待ち時間が指定時間を超える場合、バースティング対象ジョブとなり、クラウドで実行されることがあります。待ち時間=4時間の例
+#PBS -o ~/q2_dual_analysis_log_val.out
+#PBS -e ~/q2_dual_analysis_log_val.err
+#PBS -r n
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MONO_ROOT=""
 dir="$SCRIPT_DIR"
@@ -13,19 +26,6 @@ if [ -z "$MONO_ROOT" ]; then
   MONO_ROOT="$SCRIPT_DIR"
 fi
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
-#------- qsub option -----------
-#PBS -q SQUID-H
-#PBS --group=cm9029
-#PBS -m eb
-#PBS -M fukami@cp.cmc.osaka-u.ac.jp
-#PBS -l elapstim_req=05:00:00
-#PBS -l cpunum_job=8
-#PBS --enable-cloud-bursting=yes   #クラウドバースティングすることを許可します。
-#PBS -U cloud_wait_limit=01:00:00   #待ち時間が指定時間を超える場合、バースティング対象ジョブとなり、クラウドで実行されることがあります。待ち時間=4時間の例
-#PBS -o ~/q2_dual_analysis_log_val.out
-#PBS -e ~/q2_dual_analysis_log_val.err
-#PBS -r n
-
 set -euo pipefail
 
 echo "🚀 Starting dual q_inv figure job"

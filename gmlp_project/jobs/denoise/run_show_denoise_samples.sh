@@ -1,4 +1,15 @@
 #!/bin/bash
+#------- qsub option -----------
+#PBS -q DBG
+#PBS --group=cm9029
+#PBS -m eb
+#PBS -M fukami@cp.cmc.osaka-u.ac.jp
+#PBS -l elapstim_req=00:05:00
+#PBS -l cpunum_job=2
+#PBS -o ../logs/show_denoise_samples.out
+#PBS -e ../logs/show_denoise_samples.err
+#PBS -r n
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MONO_ROOT=""
 dir="$SCRIPT_DIR"
@@ -13,17 +24,6 @@ if [ -z "$MONO_ROOT" ]; then
   MONO_ROOT="$SCRIPT_DIR"
 fi
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
-#------- qsub option -----------
-#PBS -q DBG
-#PBS --group=cm9029
-#PBS -m eb
-#PBS -M fukami@cp.cmc.osaka-u.ac.jp
-#PBS -l elapstim_req=00:05:00
-#PBS -l cpunum_job=2
-#PBS -o ../logs/show_denoise_samples.out
-#PBS -e ../logs/show_denoise_samples.err
-#PBS -r n
-
 set -euo pipefail
 
 echo "🚀 Starting denoise sample viewer"
