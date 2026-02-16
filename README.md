@@ -37,13 +37,13 @@ python3 -m pip install -e . --user
 以下のように `~/.bashrc` に設定します。
 
 ```bash
-export USER_ID=u6c398
+export USER_ID=u*****
 ```
 
 `~/.bashrc` の場所は次の通りです：
-`/sqfs/home/u6c398/.bashrc`
+`/sqfs/home/u*****/.bashrc`
 
-設定後は次を実行すると反映されます。
+設定後は次を実行すると反映されます。(ユーザーIDは各自uから始まるものに書き換えてください)
 
 ```bash
 source ~/.bashrc
@@ -81,6 +81,7 @@ qsub /sqfs/work/cm9029/${USER_ID}/gmlp_project/jobs/<job_file>.sh
 - 大容量データは Git には入れません。
 
 ## 5. 出力
-- 学習結果や図などの出力は `archive/` に退避しています。
-- 新しい出力先を作り直したい場合は相談してください。
+- 学習結果や図などの出力は 各自設定してください.
+
+- 出力するspinファイルは巨大になるため、gitでは管理しないように。
 
