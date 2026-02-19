@@ -11,20 +11,48 @@
 #PBS -o ~/q2_dual_analysis_log.out
 #PBS -e ~/q2_dual_analysis_log.err
 #PBS -r n
+#PBS -V
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MONO_ROOT=""
-dir="$SCRIPT_DIR"
-while [ "$dir" != "/" ]; do
-  if [ -d "$dir/.git" ]; then
-    MONO_ROOT="$dir"
-    break
+
+# 1) Honor REPO_ROOT if provided (can point to repo root or gmlp_project).
+if [ -n "${REPO_ROOT:-}" ]; then
+  if [ -d "$REPO_ROOT/.git" ] || [ -d "$REPO_ROOT/gmlp_project" ]; then
+    MONO_ROOT="$REPO_ROOT"
+  elif [ -d "$REPO_ROOT/scripts" ] && [ -d "$REPO_ROOT/data" ]; then
+    MONO_ROOT="$(cd "$REPO_ROOT/.." && pwd)"
   fi
-  dir="$(dirname "$dir")"
-done
+fi
+
+# 2) Prefer submit directory if available (PBS copies this script into a jobfile dir).
+if [ -z "$MONO_ROOT" ]; then
+  START_DIR="${PBS_O_WORKDIR:-$SCRIPT_DIR}"
+  dir="$START_DIR"
+  while [ "$dir" != "/" ]; do
+    if [ -d "$dir/.git" ] || [ -d "$dir/gmlp_project" ]; then
+      MONO_ROOT="$dir"
+      break
+    fi
+    if [ -d "$dir/scripts" ] && [ -d "$dir/data" ]; then
+      MONO_ROOT="$(cd "$dir/.." && pwd)"
+      break
+    fi
+    dir="$(dirname "$dir")"
+  done
+fi
+
+# 3) Fallback to script dir (jobfile dir); warn if repo not found.
 if [ -z "$MONO_ROOT" ]; then
   MONO_ROOT="$SCRIPT_DIR"
 fi
+
+if [ ! -d "$MONO_ROOT/gmlp_project" ]; then
+  echo "❌ Repo root not found. MONO_ROOT=$MONO_ROOT"
+  echo "   Set REPO_ROOT to the repository root (the directory containing gmlp_project)."
+  exit 2
+fi
+
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
 set -euo pipefail
 
@@ -64,7 +92,7 @@ else
   LAYER_ARGS=(--layer-index "$LAYER_INDEX")
 fi
 
-CMD=(python "${REPO_ROOT}/analysis_scripts/qinv_calc_fig_two_sets.py" \
+CMD=(python "${REPO_ROOT}/analysis_scripts/qinv_calc_fig_two_sets_dij.py" \
   --spin_file_a1 ${MONO_ROOT}/archive/outputs_root/outputs/gmlp_output/diff_model/run_gmlp_20260101-020554_p4_train/gmlp_spinA_train_D256_F1536_L10_M1000_seedA123.pkl\
   --spin_file_b1 ${MONO_ROOT}/archive/outputs_root/outputs/gmlp_output/diff_model/run_gmlp_20260101-020554_p4_train/gmlp_spinB_train_D256_F1536_L10_M1000_seedB456.pkl\
   ${METRICS_A1:+--metrics_a1 "$METRICS_A1"} \
