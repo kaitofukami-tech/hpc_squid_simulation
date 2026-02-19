@@ -11,9 +11,23 @@ if command -v module >/dev/null 2>&1; then
   fi
 fi
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 VENV_DIR="${REPO_ROOT}/torch-env"
-PYTHON_BIN="${PYTHON_BIN:-python3}"
+PYTHON_BIN="${PYTHON_BIN:-python3.11}"
+if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
+  echo "ERROR: ${PYTHON_BIN} not found. Set PYTHON_BIN to python3.11 path or enable USE_MODULES=1."
+  exit 1
+fi
+
+
+"${PYTHON_BIN}" - <<'PY'
+import sys
+if sys.version_info < (3, 8):
+    raise SystemExit(
+        "ERROR: Python 3.8+ is required for this environment. "
+        f"Found {sys.version.split()[0]}."
+    )
+PY
 
 "${PYTHON_BIN}" -m venv "${VENV_DIR}"
 # shellcheck disable=SC1091

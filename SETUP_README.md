@@ -5,14 +5,14 @@
 ## 1. 実行方法
 
 ```bash
-cd /sqfs/work/cm9029/${USER_ID}
-./setup_torch_env.sh
+cd /sqfs/work/cm9029/${USER_ID}/hpc_squid_simulation
+bash setup_torch_env.sh
 ```
 
 完了後、次で仮想環境を有効化できます。
 
 ```bash
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+source /sqfs/work/cm9029/${USER_ID}/hpc_squid_simulation/torch-env/bin/activate
 ```
 
 ## 2. GPU 版を入れたい場合
@@ -20,7 +20,7 @@ source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
 CUDA 対応版を入れるには、`TORCH_INDEX_URL` を指定します。
 
 ```bash
-TORCH_INDEX_URL="https://download.pytorch.org/whl/cu121" ./setup_torch_env.sh
+TORCH_INDEX_URL="https://download.pytorch.org/whl/cu121" bash setup_torch_env.sh
 ```
 
 ## 3. CPU 版に固定したい場合
@@ -28,7 +28,7 @@ TORCH_INDEX_URL="https://download.pytorch.org/whl/cu121" ./setup_torch_env.sh
 CPU 版を入れたい場合は指定不要（デフォルトが CPU 版）です。
 
 ```bash
-./setup_torch_env.sh
+bash setup_torch_env.sh
 ```
 
 ## 4. パッケージ一覧

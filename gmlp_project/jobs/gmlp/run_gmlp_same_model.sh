@@ -1,58 +1,61 @@
 #!/bin/bash
 #------- qsub option -----------
-#PBS -q SQUID-H
+#PBS -q DBG
 #PBS --group=cm9029
 #PBS -m eb
 #PBS -M fukami@cp.cmc.osaka-u.ac.jp
-#PBS -l elapstim_req=17:10:00
+#PBS -l elapstim_req=00:10:00
 #PBS -l gpunum_job=2
-#PBS -o ../logs/gmlp_same_model.out
-#PBS -e ../logs/gmlp_same_model.err
+#PBS -o ../gmlp_logs/gmlp_same_model.out
+#PBS -e ../gmlp_logs/gmlp_same_model.err
 #PBS -r n
-#PBS -V
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MONO_ROOT=""
 
-# 1) Honor REPO_ROOT if provided (can point to repo root or gmlp_project).
-if [ -n "${REPO_ROOT:-}" ]; then
-  if [ -d "$REPO_ROOT/.git" ] || [ -d "$REPO_ROOT/gmlp_project" ]; then
-    MONO_ROOT="$REPO_ROOT"
-  elif [ -d "$REPO_ROOT/scripts" ] && [ -d "$REPO_ROOT/data" ]; then
-    MONO_ROOT="$(cd "$REPO_ROOT/.." && pwd)"
-  fi
-fi
-
-# 2) Prefer submit directory if available (PBS copies this script into a jobfile dir).
-if [ -z "$MONO_ROOT" ]; then
-  START_DIR="${PBS_O_WORKDIR:-$SCRIPT_DIR}"
-  dir="$START_DIR"
+find_repo_root() {
+  local start_dir="$1"
+  local dir="$start_dir"
   while [ "$dir" != "/" ]; do
-    if [ -d "$dir/.git" ] || [ -d "$dir/gmlp_project" ]; then
-      MONO_ROOT="$dir"
-      break
+    if [ -d "$dir/gmlp_project" ]; then
+      echo "$dir"
+      return 0
     fi
     if [ -d "$dir/scripts" ] && [ -d "$dir/data" ]; then
-      MONO_ROOT="$(cd "$dir/.." && pwd)"
-      break
+      echo "$(cd "$dir/.." && pwd)"
+      return 0
     fi
     dir="$(dirname "$dir")"
   done
+  return 1
+}
+
+if [ -n "${REPO_ROOT:-}" ]; then
+  if found="$(find_repo_root "$REPO_ROOT")"; then
+    MONO_ROOT="$found"
+  fi
 fi
 
-# 3) Fallback to script dir (jobfile dir); warn if repo not found.
 if [ -z "$MONO_ROOT" ]; then
-  MONO_ROOT="$SCRIPT_DIR"
+  START_DIR="${PBS_O_WORKDIR:-$SCRIPT_DIR}"
+  if found="$(find_repo_root "$START_DIR")"; then
+    MONO_ROOT="$found"
+  fi
 fi
 
-if [ ! -d "$MONO_ROOT/gmlp_project" ]; then
-  echo "❌ Repo root not found. MONO_ROOT=$MONO_ROOT"
-  echo "   Set REPO_ROOT to the repository root (the directory containing gmlp_project)."
+if [ -z "$MONO_ROOT" ]; then
+  if found="$(find_repo_root "$SCRIPT_DIR")"; then
+    MONO_ROOT="$found"
+  fi
+fi
+
+if [ -z "$MONO_ROOT" ]; then
+  echo "Repo root not found from REPO_ROOT/PBS_O_WORKDIR/SCRIPT_DIR"
   exit 2
 fi
 
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
-export PYTHONPATH="${MONO_ROOT}:${PYTHONPATH:-}"
+export PYTHONPATH="${MONO_ROOT}/gmlp_project/src:${MONO_ROOT}:${PYTHONPATH:-}"
 #------- Program execution -----------
 
 echo "🚀 Starting gMLP dual-model job (same init)"
@@ -67,7 +70,7 @@ module purge
 module load BaseGPU/2025
 module load BasePy/2025
 module load python3/3.11
-module load cudnncd
+
 
 source ${MONO_ROOT}/torch-env/bin/activate
 
@@ -79,7 +82,7 @@ nvcc --version || echo "nvcc not found"
 echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
-EPOCHS="${EPOCHS:-1000}"
+EPOCHS="${EPOCHS:-3}"
 PATCH="${PATCH:-4}"
 DMODEL="${DMODEL:-256}"
 DFFN="${DFFN:-1536}"

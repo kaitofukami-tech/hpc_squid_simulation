@@ -9,50 +9,53 @@
 #PBS -o ../../logs/mlp_same_model.out
 #PBS -e ../../logs/mlp_same_model.err
 #PBS -r n
-#PBS -V
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MONO_ROOT=""
 
-# 1) Honor REPO_ROOT if provided (can point to repo root or gmlp_project).
-if [ -n "${REPO_ROOT:-}" ]; then
-  if [ -d "$REPO_ROOT/.git" ] || [ -d "$REPO_ROOT/gmlp_project" ]; then
-    MONO_ROOT="$REPO_ROOT"
-  elif [ -d "$REPO_ROOT/scripts" ] && [ -d "$REPO_ROOT/data" ]; then
-    MONO_ROOT="$(cd "$REPO_ROOT/.." && pwd)"
-  fi
-fi
-
-# 2) Prefer submit directory if available (PBS copies this script into a jobfile dir).
-if [ -z "$MONO_ROOT" ]; then
-  START_DIR="${PBS_O_WORKDIR:-$SCRIPT_DIR}"
-  dir="$START_DIR"
+find_repo_root() {
+  local start_dir="$1"
+  local dir="$start_dir"
   while [ "$dir" != "/" ]; do
-    if [ -d "$dir/.git" ] || [ -d "$dir/gmlp_project" ]; then
-      MONO_ROOT="$dir"
-      break
+    if [ -d "$dir/gmlp_project" ]; then
+      echo "$dir"
+      return 0
     fi
     if [ -d "$dir/scripts" ] && [ -d "$dir/data" ]; then
-      MONO_ROOT="$(cd "$dir/.." && pwd)"
-      break
+      echo "$(cd "$dir/.." && pwd)"
+      return 0
     fi
     dir="$(dirname "$dir")"
   done
+  return 1
+}
+
+if [ -n "${REPO_ROOT:-}" ]; then
+  if found="$(find_repo_root "$REPO_ROOT")"; then
+    MONO_ROOT="$found"
+  fi
 fi
 
-# 3) Fallback to script dir (jobfile dir); warn if repo not found.
 if [ -z "$MONO_ROOT" ]; then
-  MONO_ROOT="$SCRIPT_DIR"
+  START_DIR="${PBS_O_WORKDIR:-$SCRIPT_DIR}"
+  if found="$(find_repo_root "$START_DIR")"; then
+    MONO_ROOT="$found"
+  fi
 fi
 
-if [ ! -d "$MONO_ROOT/gmlp_project" ]; then
-  echo "❌ Repo root not found. MONO_ROOT=$MONO_ROOT"
-  echo "   Set REPO_ROOT to the repository root (the directory containing gmlp_project)."
+if [ -z "$MONO_ROOT" ]; then
+  if found="$(find_repo_root "$SCRIPT_DIR")"; then
+    MONO_ROOT="$found"
+  fi
+fi
+
+if [ -z "$MONO_ROOT" ]; then
+  echo "Repo root not found from REPO_ROOT/PBS_O_WORKDIR/SCRIPT_DIR"
   exit 2
 fi
 
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
-export PYTHONPATH="${MONO_ROOT}:${PYTHONPATH:-}"
+export PYTHONPATH="${MONO_ROOT}/gmlp_project/src:${MONO_ROOT}:${PYTHONPATH:-}"
 #------- Program execution -----------
 
 echo "🚀 Starting MLP dual-model job (same)"

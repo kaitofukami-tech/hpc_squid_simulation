@@ -1,87 +1,92 @@
-# /sqfs/work/cm9029/${USER_ID}（日本語ガイド）
+# hpc_squid_simulation 運用ガイド
 
-このリポジトリには gMLP/MLP の実験コード、解析スクリプト、関連資料が入っています。
+このリポジトリは、SQUID 環境で gMLP / MLP 系の学習ジョブと解析を回すための実行コードです。
 
-## 1. 全体構成（トップレベル）
-- `gmlp_project/` 実験の本体（学習・評価・ジョブスクリプトなど）
-- `gmlp_project/analysis_scripts/` 解析・可視化スクリプト
-- `docs/` ドキュメント・資料
-- `batchnorm/`, `thesis/` 研究用の補助資料
-- `archive/` 過去の出力や不要になったファイルの退避場所
+## 前提
+- 環境: SQUID (qsub が使える環境)
+- クローン先の例: `/sqfs/work/cm9029/${USER_ID}/hpc_squid_simulation`
+- Python: `python3.11` を使用
 
-※ 以前の output 系ディレクトリはすべて `archive/` に移動済みです。
+## ディレクトリ構成
+- `gmlp_project/`: 学習・評価コード本体
+- `gmlp_project/jobs/`: ジョブスクリプト
+- `setup_torch_env.sh`: 仮想環境セットアップ
+- `torch-env/`: 仮想環境（セットアップ後に作成）
+- `gmlp_output/`: 学習出力（ジョブ実行で作成）
 
-## 2. 環境構築（最低限）
-
-### (A) 既存の仮想環境を使う場合
-この環境では `torch-env/` に既存の仮想環境があります。
-
+## 初回セットアップ
+1. リポジトリへ移動
 ```bash
-source /sqfs/work/cm9029/${USER_ID}/torch-env/bin/activate
+cd /sqfs/work/cm9029/${USER_ID}/hpc_squid_simulation
 ```
 
-### (B) gmlp_project を編集可能インストールする
-`gmlp_project/` では `pip install -e . --user` を使う運用になっています。
-
+2. 仮想環境作成
 ```bash
-cd /sqfs/work/cm9029/${USER_ID}/gmlp_project
-python3 -m pip install -e . --user
+bash setup_torch_env.sh
 ```
 
-これで `gmlp_project.*` を import できます。
-
-
-## 2.1 ユーザーIDの環境変数
-
-この環境では `USER_ID` を使ってパスを組み立てます。
-以下のように `~/.bashrc` に設定します。
-
+3. アクティベート
 ```bash
-export USER_ID=u*****
+source /sqfs2/cmc/1/work/cm9029/${USER_ID}/hpc_squid_simulation/torch-env/bin/activate
 ```
 
-`~/.bashrc` の場所は次の通りです：
-`/sqfs/home/u*****/.bashrc`
-
-設定後は次を実行すると反映されます。(ユーザーIDは各自uから始まるものに書き換えてください)
-
+補足:
+- この環境では `/sqfs/work/...` が実体 `/sqfs2/cmc/1/work/...` を指すため、`setup_torch_env.sh` は実体パス側で `torch-env` を作ります。
+- `python3.11` が見つからない場合は以下を実行:
 ```bash
-source ~/.bashrc
+USE_MODULES=1 bash setup_torch_env.sh
 ```
 
+## データ配置
+- 既定入力データ:
+  - `gmlp_project/data/mnist.npz`
+- 必要ならジョブ投入時に `INPUT` 環境変数で上書き可能
 
-### (C) 自動セットアップスクリプト
-以下のスクリプトで `torch-env/` を作成できます。
+## 最初に動かすジョブ（gMLP diff/same）
+`qsub` は次のディレクトリから実行できます:
+- `/sqfs/work/cm9029/${USER_ID}/hpc_squid_simulation/gmlp_project/jobs/gmlp`
 
+実行例:
 ```bash
-cd /sqfs/work/cm9029/${USER_ID}
-./setup_torch_env.sh
+cd /sqfs/work/cm9029/${USER_ID}/hpc_squid_simulation/gmlp_project/jobs/gmlp
+qsub run_gmlp_diff_model.sh
+qsub run_gmlp_same_model.sh
 ```
 
-GPU版を入れたい場合は例のように指定します。
+## ログと出力先
+### gMLP diff/same ジョブ
+- qsub ログ:
+  - `gmlp_project/jobs/gmlp_logs/gmlp_diff_model.out`
+  - `gmlp_project/jobs/gmlp_logs/gmlp_diff_model.err`
+  - `gmlp_project/jobs/gmlp_logs/gmlp_same_model.out`
+  - `gmlp_project/jobs/gmlp_logs/gmlp_same_model.err`
 
+- 学習出力:
+  - diff 既定: `gmlp_output/`
+  - same 既定: `gmlp_output/same_model/`
+
+### 重要
+- ジョブは scratch (`/sqfs/ssd/...`) を使って計算し、終了時に成果物を最終出力先へ同期して scratch を削除します。
+
+## ジョブスクリプトの共通仕様
+`gmlp_project/jobs` 配下の PBS ジョブは以下を共通化しています。
+- リポジトリルート自動探索 (`REPO_ROOT` / `PBS_O_WORKDIR` / `SCRIPT_DIR`)
+- `PYTHONPATH` に `gmlp_project/src` を追加
+
+そのため、`gmlp_project/jobs` 以下であればどの場所から `qsub` しても動作するようにしてあります。
+
+## よくあるエラー
+### `ERROR: Python 3.8+ is required ... Found 3.6.8`
+- `setup_torch_env.sh` 実行時の Python が古い
+- 対処:
 ```bash
-TORCH_INDEX_URL="https://download.pytorch.org/whl/cu121" ./setup_torch_env.sh
+PYTHON_BIN=python3.11 bash setup_torch_env.sh
 ```
 
-## 3. 実行例
+### `ModuleNotFoundError: No module named 'gmlp_project'`
+- ジョブの `PYTHONPATH` が通っていないか、古いスクリプトを使っている
+- まず最新版の `gmlp_project/jobs/*.sh` を利用する
 
-### 解析スクリプトを直接実行
-```bash
-python /sqfs/work/cm9029/${USER_ID}/gmlp_project/analysis_scripts/mlp_qinv_calc_fig_two_sets.py --help
-```
-
-### ジョブを投げる（qsub）
-```bash
-qsub /sqfs/work/cm9029/${USER_ID}/gmlp_project/jobs/<job_file>.sh
-```
-
-## 4. データ
-- データは `gmlp_project/data/` に置きます。
-- 大容量データは Git には入れません。
-
-## 5. 出力
-- 学習結果や図などの出力は 各自設定してください.
-
-- 出力するspinファイルは巨大になるため、gitでは管理しないように。
-
+### `torch-env/bin/activate` が見つからない
+- `setup_torch_env.sh` 未実行、または別パスで作られている
+- 実体パス側 (`/sqfs2/cmc/1/work/...`) に `torch-env` があるか確認
