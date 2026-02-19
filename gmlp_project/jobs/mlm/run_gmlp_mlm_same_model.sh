@@ -52,6 +52,7 @@ if [ ! -d "$MONO_ROOT/gmlp_project" ]; then
 fi
 
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
+export PYTHONPATH="${MONO_ROOT}:${PYTHONPATH:-}"
 echo "🚀 Starting gMLP MLM dual-model job (same init)"
 echo "==============================================="
 echo "Job ID: ${PBS_JOBID:-manual}"

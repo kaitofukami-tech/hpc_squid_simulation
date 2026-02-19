@@ -52,6 +52,7 @@ if [ ! -d "$MONO_ROOT/gmlp_project" ]; then
 fi
 
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
+export PYTHONPATH="${MONO_ROOT}:${PYTHONPATH:-}"
 #------- Program execution -----------
 
 echo "🚀 Starting gMLP denoiser dual-model job"

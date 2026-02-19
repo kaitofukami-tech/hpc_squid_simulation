@@ -53,6 +53,7 @@ if [ ! -d "$MONO_ROOT/gmlp_project" ]; then
 fi
 
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
+export PYTHONPATH="${MONO_ROOT}:${PYTHONPATH:-}"
 echo "🚀 Starting MLP dual q_inv figure job"
 echo "Job ID: $PBS_JOBID"
 echo "Host: $(hostname)"

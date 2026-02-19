@@ -55,6 +55,7 @@ if [ ! -d "$MONO_ROOT/gmlp_project" ]; then
 fi
 
 REPO_ROOT="${REPO_ROOT:-$MONO_ROOT}"
+export PYTHONPATH="${MONO_ROOT}:${PYTHONPATH:-}"
 set -euo pipefail
 
 echo "🚀 Starting dual q_inv figure job (multi-GPU by layer)"
