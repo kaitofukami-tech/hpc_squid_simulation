@@ -1,13 +1,13 @@
 # jobs/ 構成
 
 ジョブスクリプトは種類ごとにサブフォルダに分けています。
-パラメータは `configs/` で管理する方針です。
+パラメータは ジョブスクリプト内で管理する方針です。
 
 ```
 jobs/
-  gmlp/       # gMLP本体の学習・再現
-  mlm/        # MLM関連
-  denoise/    # デノイズ課題
+  gmlp/       # gMLPの分類タスク
+  mlm/        # gMLPのMLMタスク
+  denoise/    # gMLPのノイズ除去タスク
   recompute/  # スピン再計算など
   data/       # データ前処理や可視化
   mlp/        # MLP系
